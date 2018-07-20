@@ -1,4 +1,4 @@
-pragma solidity 0.4.23;
+pragma solidity 0.4.23^;
 
 /**
  * @title ERC20Basic
@@ -366,33 +366,52 @@ contract PausableToken is StandardToken, Pausable {
 
 /**
  * @title MyToken
- * @dev My Token Smart Contract
+ * @dev My Token Smart Contract that defines the CFX token
  */
 contract MyToken is DetailedERC20, StandardToken, BurnableToken, PausableToken {
   address public tokenVault;
   address public saleAddress;
+  bool private configSet;
+
+  event FightFireWithFire(address _addr, uint256 _amount);
+
   /**
    * Init token by setting its token vault
-   *
-   * @param _saleAddress address where the sale contract is defined
    */
-  constructor(
-    address _saleAddress
-  ) public
-  DetailedERC20("MY Token", "GW2", 18)
+  constructor() public
+  DetailedERC20("CFX Token", "CFX", 18)
   {
-    saleAddress = _saleAddress;
-    // balances[msg.sender] = totalSupply;
-
+    // saleAddress = _saleAddress;
     createTokens();
   }
+
+  /**
+   * Setup the sale address
+   *
+   * @param _addr address where the sale contract is defined
+   * @param _name name of the contract
+   * @param _value the id of the contract
+   */
+  function setupAddress(address _addr, string _name, int256 _value) external onlyOwner {
+    require(!configSet);
+    saleAddress = _addr;
+    configSet = true;
+  }
   
+  /**
+   * @dev Defined the total supply and the address of tokenVault
+   */
   function createTokens() internal onlyOwner {
     totalSupply_ = 5000000000000000000000000;
     tokenVault = msg.sender;
     balances[tokenVault] = totalSupply_;
   }
   
+  /**
+   * @dev Transfer the token inside tokenVault to an address
+   * @param _to the address of the destination
+   * @param _amount the value of token to be transfer
+   */
   function transferToken(address _to, uint256 _amount) external returns (bool) {
     require(msg.sender == saleAddress);
     require(balances[tokenVault] >= _amount);
@@ -403,8 +422,10 @@ contract MyToken is DetailedERC20, StandardToken, BurnableToken, PausableToken {
     return true;
   }
   
-  event FightFireWithFire(address _addr, uint256 _amount);
-  
+  /**
+   * @dev Burn the token inside tokenVault
+   * @param _amount the value of token to be burn
+   */
   function needALight(uint256 _amount) external returns (bool) {
     require(msg.sender == saleAddress);
     _burn(tokenVault, _amount);

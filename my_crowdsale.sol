@@ -1,4 +1,4 @@
-pragma solidity 0.4.23;
+pragma solidity 0.4.23^;
 
 /**
  * @title ERC20Basic
@@ -582,7 +582,7 @@ contract MyCrowdsale is RefundableCrowdsale {
   
   // setup
   bool private configSet;
-  address public tokenVault;
+  address private tokenVault;
   
 
   /**
@@ -629,11 +629,11 @@ contract MyCrowdsale is RefundableCrowdsale {
     isClose = true;
   }
   
-  function setupTokenVault(address _token, address _tokenVault) public onlyOwner {
+  function setupTokenVault(address _token, address _tokenVault) external onlyOwner {
     require(!configSet);
-    // require(isClose);
-    // require(hasClosed());
+    require(isClose);
     require(_token != address(0));
+    require(_tokenVault != address(0));
 
     token = ERC20(_token);
     tokenVault = _tokenVault;  
@@ -650,14 +650,9 @@ contract MyCrowdsale is RefundableCrowdsale {
   */
   function _processPurchase(address _beneficiary, uint256 _tokenAmount) internal {
     require(!isClose);
-    // bool crowdSaleClosed = hasClosed();
-    // emit CrowdsaleClose(crowdSaleClosed);
     
     // TODO: checkings
     require(!hasClosed());
-    // require(!capReached());
-    // require(balances[tokenVault] >= _tokenAmount);
-    // require(token.balanceOf(tokenVault) >= _tokenAmount);
     
     token.transferToken(_beneficiary, _tokenAmount);
     tokensIssued = tokensIssued.add(_tokenAmount);
@@ -705,7 +700,7 @@ contract MyCrowdsale is RefundableCrowdsale {
    * @dev Open or closes the crowdsale.
    * @param _close boolean value
    */
-  function updateCrowdsaleState(bool _close) public onlyOwner {
+  function updateCrowdsaleState(bool _close) external onlyOwner {
     isClose = _close;
   }
 
@@ -723,9 +718,24 @@ contract MyCrowdsale is RefundableCrowdsale {
    * @dev Update the conversion rate when crowdsale is close 
    * @param _rate value of the conversion rate to be assigned
    */
-  function updateRate(uint256 _rate) external onlyOwner{
+  function updateRate(uint256 _rate) external onlyOwner {
     require(isClose);
     require(_rate > 0);
     rate = _rate;
+  }
+  
+  /**
+   * @dev Overrides checks whether the period in which the crowdsale is open has already elapsed.
+   * @return Whether crowdsale period has elapsed
+   */
+  function hasClosed() public view returns (bool) {
+    bool result = false;
+    if (isClose == true) {
+      result = true;
+    } else {
+      result = block.timestamp > closingTime;
+    }
+    // solium-disable-next-line security/no-block-members
+    return result;
   }
 }
